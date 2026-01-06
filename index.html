@@ -734,7 +734,7 @@
         <div class="funnel-node rounded-2xl p-4 funnel-card">
           <div class="text-xs font-bold text-slate-300">${escapeHtml(topLabel)}</div>
           <div class="mt-1 text-sm font-semibold text-white">${escapeHtml(title)}</div>
-          <div class="mt-2 text-2xl font-extrabold text-indigo-200">${escapeHtml(value)}</div>
+          <div class="mt-2 text-xl font-extrabold text-indigo-200">${escapeHtml(value)}</div>
           <div class="mt-3 space-y-1">
             ${lines.map(([k,v]) => `<div class="flex justify-between text-[11px] text-slate-400"><span>${escapeHtml(k)}</span><span class="text-slate-200 font-semibold">${escapeHtml(v)}</span></div>`).join('')}
           </div>
@@ -760,7 +760,7 @@
         <div class="funnel-mid">
           <div class="text-[11px] text-slate-400">${escapeHtml(prefix)}</div>
           <div class="text-sm font-bold text-white">${escapeHtml(title)}</div>
-          <div class="mt-1 text-xl font-extrabold text-indigo-200">${escapeHtml(bigValue)}</div>
+          <div class="mt-1 text-lg font-extrabold text-indigo-200">${escapeHtml(bigValue)}</div>
           <div class="mt-3 flex flex-col items-center gap-2">
             ${chips.map(([k,v]) => `<div class="chip"><span>${escapeHtml(k)}</span><b class="text-slate-100">${escapeHtml(v)}</b></div>`).join('')}
           </div>
