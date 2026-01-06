@@ -1,0 +1,830 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Funil Dashboard</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+    body { font-family: 'Inter', sans-serif; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(-10px);} to { opacity: 1; transform: translateY(0);} }
+    .fade-in { animation: fadeIn 0.35s ease-out forwards; }
+    ::-webkit-scrollbar { width: 8px; height: 8px; }
+    ::-webkit-scrollbar-track { background: #0f172a; }
+    ::-webkit-scrollbar-thumb { background: #334155; border-radius: 10px; }
+    ::-webkit-scrollbar-thumb:hover { background: #475569; }
+    .glass { background: rgba(30,41,59,.45); backdrop-filter: blur(10px); }
+    .btn-tab { border: 1px solid rgba(148,163,184,.25); }
+    .btn-tab.active { border-color: rgba(99,102,241,.6); box-shadow: 0 0 0 3px rgba(99,102,241,.18); }
+
+    /* Horizontal funnel */
+    .funnel-card { border: 1px solid rgba(148,163,184,.18); }
+    .funnel-scroll { overflow-x: auto; padding-bottom: 6px; }
+    .funnel-track { min-width: 980px; } /* garante layout horizontal mesmo em telas menores */
+    .funnel-node {
+      width: 240px;
+      background: rgba(2,6,23,.35);
+      border: 1px solid rgba(148,163,184,.18);
+    }
+    .funnel-node.final {
+      background: linear-gradient(135deg, rgba(99,102,241,.18), rgba(2,6,23,.35));
+      border: 2px solid rgba(99,102,241,.55);
+      box-shadow: 0 10px 40px rgba(99,102,241,.12);
+    }
+    .funnel-arrow {
+      width: 64px;
+      height: 64px;
+      border-radius: 18px;
+      background: rgba(2,6,23,.35);
+      border: 1px solid rgba(148,163,184,.18);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+    .funnel-mid {
+      width: 220px;
+      flex-shrink: 0;
+      text-align: center;
+    }
+    .chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 10px;
+      border-radius: 999px;
+      background: rgba(2,6,23,.35);
+      border: 1px solid rgba(148,163,184,.18);
+      font-size: 11px;
+      color: rgba(226,232,240,.75);
+      white-space: nowrap;
+    }
+  </style>
+</head>
+
+<body class="bg-slate-950 text-slate-200 min-h-screen p-4">
+  <div class="max-w-7xl mx-auto fade-in">
+    <div class="rounded-3xl border border-slate-700/60 shadow-2xl shadow-indigo-500/10 glass p-5">
+      <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-2xl bg-indigo-500/20 border border-indigo-400/30 flex items-center justify-center">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+              <path d="M4 19V5" stroke="#a5b4fc" stroke-width="2" stroke-linecap="round"/>
+              <path d="M4 19H20" stroke="#a5b4fc" stroke-width="2" stroke-linecap="round"/>
+              <path d="M7 14L10 11L13 13L18 7" stroke="#a5b4fc" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </div>
+          <div>
+            <h1 class="text-2xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-indigo-300 to-teal-200">
+              Dashboard de Funil
+            </h1>
+            <p class="text-slate-400 text-sm">Análise e cadastro de operações por categoria</p>
+          </div>
+        </div>
+
+        <div class="flex items-center gap-3">
+          <div class="text-right">
+            <div class="text-[11px] text-slate-400">Cotação fixa (USD → BRL)</div>
+            <div class="inline-flex items-center gap-2 rounded-2xl px-3 py-2 bg-slate-950/60 border border-slate-700">
+              <span class="text-sm font-semibold text-white" id="usdRateLabel"></span>
+              <span class="text-[11px] text-slate-400">(editável no Code.gs)</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="mt-5 flex flex-wrap gap-2">
+        <button id="tabBtnAnalise" class="btn-tab active px-4 py-2 rounded-xl bg-slate-950/40 hover:bg-slate-900/40 text-sm font-semibold">
+          Análise
+        </button>
+        <button id="tabBtnCadastro" class="btn-tab px-4 py-2 rounded-xl bg-slate-950/40 hover:bg-slate-900/40 text-sm font-semibold">
+          Cadastro
+        </button>
+      </div>
+
+      <!-- =======================
+           ABA: ANÁLISE
+      ======================== -->
+      <section id="tabAnalise" class="mt-4">
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-4">
+          <div class="lg:col-span-4 rounded-2xl bg-slate-950/40 border border-slate-700/60 p-4">
+            <div class="flex items-center justify-between">
+              <h2 class="text-sm font-bold text-slate-200">Filtro</h2>
+              <span class="text-[11px] text-slate-400">Selecione até 2 operações</span>
+            </div>
+
+            <div class="mt-3">
+              <label class="block text-xs font-semibold text-slate-400 mb-1">Categoria</label>
+              <select id="analiseCategoriaSelect" class="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-xl text-white focus:ring-2 focus:ring-indigo-500"></select>
+            </div>
+
+            <div class="mt-3">
+              <div class="flex items-center justify-between">
+                <label class="text-xs font-semibold text-slate-400">Operações</label>
+                <button id="btnLimparSelecao" class="text-[11px] px-2 py-1 rounded-lg bg-slate-900 border border-slate-700 hover:bg-slate-800">
+                  limpar
+                </button>
+              </div>
+
+              <div id="analiseOpsList" class="mt-2 max-h-[420px] overflow-auto space-y-2 pr-1"></div>
+            </div>
+          </div>
+
+          <div class="lg:col-span-8 rounded-2xl bg-slate-950/40 border border-slate-700/60 p-4">
+            <div class="flex flex-col md:flex-row md:items-center justify-between gap-3">
+              <div>
+                <h2 class="text-sm font-bold text-slate-200">Análise</h2>
+                <p class="text-xs text-slate-400">Funil horizontal (cards + setas + taxas)</p>
+              </div>
+              <div class="text-xs text-slate-400" id="analiseHint"></div>
+            </div>
+
+            <div id="analiseCompare" class="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- =======================
+           ABA: CADASTRO
+      ======================== -->
+      <section id="tabCadastro" class="mt-4 hidden">
+        <div class="grid grid-cols-1 xl:grid-cols-12 gap-4">
+          <div class="xl:col-span-4 rounded-2xl bg-slate-950/40 border border-slate-700/60 p-4">
+            <div class="flex items-center justify-between">
+              <h2 class="text-sm font-bold text-slate-200">Categorias</h2>
+              <button id="btnCatNova" class="px-3 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold">
+                + Nova
+              </button>
+            </div>
+
+            <div class="mt-3">
+              <label class="block text-xs font-semibold text-slate-400 mb-1">Selecionar categoria</label>
+              <select id="cadCategoriaSelect" class="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-xl text-white focus:ring-2 focus:ring-indigo-500"></select>
+            </div>
+
+            <div class="mt-3 flex flex-wrap gap-2">
+              <button id="btnCatRenomear" class="px-3 py-2 rounded-xl bg-slate-900 border border-slate-700 hover:bg-slate-800 text-white text-xs font-semibold">
+                Renomear
+              </button>
+              <button id="btnCatExcluir" class="px-3 py-2 rounded-xl bg-slate-900 border border-slate-700 hover:bg-slate-800 text-white text-xs font-semibold">
+                Excluir
+              </button>
+            </div>
+
+            <div class="mt-4 h-px bg-slate-800"></div>
+
+            <div class="mt-4">
+              <div class="text-xs font-semibold text-slate-400 mb-2">Lista de categorias</div>
+              <div id="catsList" class="max-h-[360px] overflow-auto space-y-2 pr-1"></div>
+            </div>
+          </div>
+
+          <div class="xl:col-span-8 rounded-2xl bg-slate-950/40 border border-slate-700/60 p-4">
+            <div class="flex flex-col md:flex-row md:items-center justify-between gap-3">
+              <div>
+                <h2 class="text-sm font-bold text-slate-200">Operações</h2>
+                <p class="text-xs text-slate-400">Crie/edite operações dentro da categoria selecionada</p>
+              </div>
+
+              <div class="flex flex-wrap gap-2">
+                <button id="btnOpNova" class="px-3 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold">+ Nova operação</button>
+                <button id="btnOpSalvar" class="px-3 py-2 rounded-xl bg-teal-600 hover:bg-teal-700 text-white text-xs font-semibold">Salvar</button>
+                <button id="btnOpExcluir" class="px-3 py-2 rounded-xl bg-slate-900 border border-slate-700 hover:bg-slate-800 text-white text-xs font-semibold">Excluir</button>
+              </div>
+            </div>
+
+            <div class="mt-4 grid grid-cols-1 lg:grid-cols-12 gap-4">
+              <div class="lg:col-span-4 rounded-2xl bg-slate-950/50 border border-slate-700/60 p-3">
+                <label class="block text-xs font-semibold text-slate-400 mb-1">Operação</label>
+                <select id="cadOperacaoSelect" class="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-xl text-white focus:ring-2 focus:ring-indigo-500"></select>
+                <div class="mt-3 text-[11px] text-slate-400">Dica: selecione uma operação para editar.</div>
+
+                <div class="mt-4 h-px bg-slate-800"></div>
+
+                <div class="mt-4 grid grid-cols-2 gap-2">
+                  <div class="rounded-xl bg-slate-900 border border-slate-700 p-3">
+                    <div class="text-[11px] text-slate-400">Leads</div>
+                    <div id="cadKpiLeads" class="text-lg font-extrabold text-white">0</div>
+                  </div>
+                  <div class="rounded-xl bg-slate-900 border border-slate-700 p-3">
+                    <div class="text-[11px] text-slate-400">Final (%)</div>
+                    <div id="cadKpiPct" class="text-lg font-extrabold text-white">0,00%</div>
+                  </div>
+                </div>
+
+                <div class="mt-2 rounded-xl bg-slate-900 border border-slate-700 p-3">
+                  <div class="text-[11px] text-slate-400">Recuperação final (R$)</div>
+                  <div id="cadKpiFinal" class="text-xl font-extrabold text-white">R$ 0,00</div>
+                </div>
+              </div>
+
+              <div class="lg:col-span-8 rounded-2xl bg-slate-950/50 border border-slate-700/60 p-4">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <div class="md:col-span-2">
+                    <label class="block text-xs font-semibold text-slate-400 mb-1">Nome da operação</label>
+                    <input id="op_nome" type="text" class="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-xl text-white focus:ring-2 focus:ring-indigo-500" placeholder="Ex.: JN CC US" />
+                  </div>
+
+                  <div>
+                    <label class="block text-xs font-semibold text-slate-400 mb-1">Investimento (R$)</label>
+                    <input id="op_investimento" type="number" step="0.01" min="0" class="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-xl text-white focus:ring-2 focus:ring-indigo-500" placeholder="50000" />
+                  </div>
+
+                  <div>
+                    <label class="block text-xs font-semibold text-slate-400 mb-1">CPA (R$)</label>
+                    <input id="op_cpa" type="number" step="0.01" min="0" class="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-xl text-white focus:ring-2 focus:ring-indigo-500" placeholder="6.00" />
+                  </div>
+
+                  <div>
+                    <label class="block text-xs font-semibold text-slate-400 mb-1">ROAS (%)</label>
+                    <input id="op_roas" type="number" step="0.01" min="0" class="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-xl text-white focus:ring-2 focus:ring-indigo-500" placeholder="80" />
+                  </div>
+
+                  <div>
+                    <label class="block text-xs font-semibold text-slate-400 mb-1">Aproveitamento Leads (%)</label>
+                    <input id="op_aprovLeads" type="number" step="0.01" min="0" class="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-xl text-white focus:ring-2 focus:ring-indigo-500" placeholder="80" />
+                  </div>
+
+                  <div>
+                    <label class="block text-xs font-semibold text-slate-400 mb-1">Aproveitamento ciclo inicial (%)</label>
+                    <input id="op_aprovCiclo" type="number" step="0.01" min="0" class="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-xl text-white focus:ring-2 focus:ring-indigo-500" placeholder="50" />
+                  </div>
+
+                  <div>
+                    <label class="block text-xs font-semibold text-slate-400 mb-1">RPS Ciclo Inicial (USD)</label>
+                    <input id="op_rps" type="number" step="0.01" min="0" class="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-xl text-white focus:ring-2 focus:ring-indigo-500" placeholder="214.19" />
+                  </div>
+                </div>
+
+                <div class="mt-4 text-xs text-slate-400" id="statusCadastro"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <div class="mt-5 text-[11px] text-slate-500">
+        Leads = Investimento/CPA · Valor recuperado = Investimento*(ROAS/100) · Chegada = Leads*(AprovLeads/100) · Sessões = Chegada*(AprovCiclo/100) · Receita = Sessões*RPS/1000*Cotação · Final = Recuperado + Receita
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const USD_BRL_RATE = Number("<?= usdRate ?>") || 5.30;
+
+    const $ = (id) => document.getElementById(id);
+
+    const state = {
+      categorias: [],
+      cadOpsSimple: [],
+      cadOpAtual: null,
+      cadIsNew: true,
+      analiseOpsFull: [],
+      analiseSelectedIds: []
+    };
+
+    function brl(v){ return new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL'}).format(v||0); }
+    function usd(v){ return new Intl.NumberFormat('en-US',{style:'currency',currency:'USD'}).format(v||0); }
+    function pct(v){ return (v||0).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2}) + '%'; }
+    function intBR(v){ return Math.round(v||0).toLocaleString('pt-BR'); }
+
+    function n(id){ return Number($(id).value || 0); }
+
+    function setCadastroStatus(msg, isErr=false){
+      $('statusCadastro').textContent = msg || '';
+      $('statusCadastro').className = 'mt-4 text-xs ' + (isErr ? 'text-red-300' : 'text-slate-400');
+    }
+
+    function clamp(x,a,b){ return Math.max(a, Math.min(b, x)); }
+
+    function calcFromInputs(investimento, cpa, roasP, aprovLeadsP, aprovCicloP, rpsUsd){
+      const leads = (cpa > 0) ? (investimento / cpa) : 0;
+      const valorRec = investimento * (roasP/100);
+      const chegada = leads * (aprovLeadsP/100);
+      const sessoes = chegada * (aprovCicloP/100);
+      const receitaCiclo = (sessoes * rpsUsd / 1000) * USD_BRL_RATE;
+      const valorFinal = valorRec + receitaCiclo;
+      const percentFinal = (investimento > 0) ? (valorFinal / investimento) * 100 : 0;
+      return { leads, valorRec, chegada, sessoes, receitaCiclo, valorFinal, percentFinal };
+    }
+
+    function calcCadastroKPIs(){
+      const investimento = n('op_investimento');
+      const cpa = n('op_cpa');
+      const roasP = n('op_roas');
+      const aprovLeadsP = n('op_aprovLeads');
+      const aprovCicloP = n('op_aprovCiclo');
+      const rpsUsd = n('op_rps');
+      const c = calcFromInputs(investimento, cpa, roasP, aprovLeadsP, aprovCicloP, rpsUsd);
+      $('cadKpiLeads').textContent = intBR(c.leads);
+      $('cadKpiPct').textContent = pct(c.percentFinal);
+      $('cadKpiFinal').textContent = brl(c.valorFinal);
+    }
+
+    function getCadPayload(){
+      return {
+        id: state.cadOpAtual?.id || null,
+        createdAt: state.cadOpAtual?.createdAt || null,
+        categoriaId: $('cadCategoriaSelect').value,
+        nome: $('op_nome').value.trim(),
+        investimento: n('op_investimento'),
+        cpa: n('op_cpa'),
+        roasPercent: n('op_roas'),
+        aproveitamentoLeadsPercent: n('op_aprovLeads'),
+        aproveitamentoCicloInicialPercent: n('op_aprovCiclo'),
+        rpsCicloInicialUsd: n('op_rps')
+      };
+    }
+
+    function fillCadForm(op){
+      $('op_nome').value = op?.nome || '';
+      $('op_investimento').value = (op?.investimento ?? '');
+      $('op_cpa').value = (op?.cpa ?? '');
+      $('op_roas').value = (op?.roasPercent ?? '');
+      $('op_aprovLeads').value = (op?.aproveitamentoLeadsPercent ?? '');
+      $('op_aprovCiclo').value = (op?.aproveitamentoCicloInicialPercent ?? '');
+      $('op_rps').value = (op?.rpsCicloInicialUsd ?? '');
+      calcCadastroKPIs();
+    }
+
+    function clearCadForm(){
+      state.cadOpAtual = null;
+      state.cadIsNew = true;
+      fillCadForm({
+        nome: '',
+        investimento: '',
+        cpa: '',
+        roasPercent: '',
+        aproveitamentoLeadsPercent: '',
+        aproveitamentoCicloInicialPercent: '',
+        rpsCicloInicialUsd: ''
+      });
+      $('cadOperacaoSelect').value = '';
+      setCadastroStatus('Modo: nova operação');
+    }
+
+    function switchTab(which){
+      const isAnalise = which === 'analise';
+      $('tabAnalise').classList.toggle('hidden', !isAnalise);
+      $('tabCadastro').classList.toggle('hidden', isAnalise);
+      $('tabBtnAnalise').classList.toggle('active', isAnalise);
+      $('tabBtnCadastro').classList.toggle('active', !isAnalise);
+
+      if (isAnalise) {
+        loadAnaliseOpsFull($('analiseCategoriaSelect').value);
+      } else {
+        renderCatsList();
+      }
+    }
+
+    function renderCatsList(){
+      const wrap = $('catsList');
+      wrap.innerHTML = '';
+      state.categorias.forEach(c => {
+        const el = document.createElement('button');
+        el.className = 'w-full text-left px-3 py-3 rounded-xl bg-slate-950/40 border border-slate-700 hover:bg-slate-900/40';
+        el.innerHTML = `<div class="text-sm font-semibold text-white">${escapeHtml(c.nome)}</div><div class="text-[11px] text-slate-400">${c.id}</div>`;
+        el.onclick = () => {
+          $('cadCategoriaSelect').value = c.id;
+          $('analiseCategoriaSelect').value = c.id;
+          loadCadOperacoes(c.id);
+          loadAnaliseOpsFull(c.id);
+        };
+        wrap.appendChild(el);
+      });
+    }
+
+    function loadCategorias(selectId){
+      google.script.run
+        .withSuccessHandler((cats) => {
+          state.categorias = cats || [];
+          const selA = $('analiseCategoriaSelect');
+          const selC = $('cadCategoriaSelect');
+          selA.innerHTML = '';
+          selC.innerHTML = '';
+
+          state.categorias.forEach(c => {
+            const o1 = document.createElement('option');
+            o1.value = c.id; o1.textContent = c.nome;
+            selA.appendChild(o1);
+
+            const o2 = document.createElement('option');
+            o2.value = c.id; o2.textContent = c.nome;
+            selC.appendChild(o2);
+          });
+
+          if (selectId) { selA.value = selectId; selC.value = selectId; }
+          if (!selA.value && state.categorias.length) { selA.value = state.categorias[0].id; selC.value = state.categorias[0].id; }
+
+          renderCatsList();
+          loadCadOperacoes(selC.value);
+          loadAnaliseOpsFull(selA.value);
+        })
+        .withFailureHandler((e) => {
+          $('analiseHint').textContent = (e?.message || String(e));
+        })
+        .apiListCategorias();
+    }
+
+    function catFlow(mode){
+      const sel = $('cadCategoriaSelect');
+      const id = sel.value;
+      const current = state.categorias.find(x => x.id === id);
+
+      if (mode === 'new') {
+        const nome = prompt('Nome da nova categoria:');
+        if (!nome) return;
+        google.script.run
+          .withSuccessHandler((r) => loadCategorias(r.id))
+          .withFailureHandler((e) => setCadastroStatus(e?.message || String(e), true))
+          .apiUpsertCategoria({ nome });
+        return;
+      }
+
+      if (!current) return;
+
+      if (mode === 'rename') {
+        const nome = prompt('Novo nome da categoria:', current.nome);
+        if (!nome) return;
+        google.script.run
+          .withSuccessHandler(() => loadCategorias(current.id))
+          .withFailureHandler((e) => setCadastroStatus(e?.message || String(e), true))
+          .apiUpsertCategoria({ id: current.id, nome });
+        return;
+      }
+
+      if (mode === 'delete') {
+        const ok = confirm(`Excluir a categoria "${current.nome}"?\nIsso apaga também todas as operações dessa categoria.`);
+        if (!ok) return;
+        google.script.run
+          .withSuccessHandler(() => loadCategorias())
+          .withFailureHandler((e) => setCadastroStatus(e?.message || String(e), true))
+          .apiDeleteCategoria({ id: current.id });
+      }
+    }
+
+    function loadCadOperacoes(categoriaId, selectOpId=null){
+      if (!categoriaId) return;
+      google.script.run
+        .withSuccessHandler((ops) => {
+          state.cadOpsSimple = ops || [];
+          const sel = $('cadOperacaoSelect');
+          sel.innerHTML = '';
+
+          const empty = document.createElement('option');
+          empty.value = ''; empty.textContent = '— selecione —';
+          sel.appendChild(empty);
+
+          state.cadOpsSimple.forEach(o => {
+            const opt = document.createElement('option');
+            opt.value = o.id; opt.textContent = o.nome;
+            sel.appendChild(opt);
+          });
+
+          if (selectOpId) sel.value = selectOpId;
+          if (sel.value) loadCadOperacao(sel.value);
+          else clearCadForm();
+        })
+        .withFailureHandler((e) => setCadastroStatus(e?.message || String(e), true))
+        .apiListOperacoes({ categoriaId });
+    }
+
+    function loadCadOperacao(id){
+      if (!id) return clearCadForm();
+      google.script.run
+        .withSuccessHandler((op) => {
+          state.cadOpAtual = op;
+          state.cadIsNew = false;
+          fillCadForm(op);
+          setCadastroStatus('Operação carregada.');
+          setTimeout(() => setCadastroStatus(''), 800);
+        })
+        .withFailureHandler((e) => setCadastroStatus(e?.message || String(e), true))
+        .apiGetOperacao({ id });
+    }
+
+    function saveCadOperacao(){
+      const payload = getCadPayload();
+      if (!payload.categoriaId) return setCadastroStatus('Selecione uma categoria.', true);
+      if (!payload.nome) return setCadastroStatus('Preencha o nome da operação.', true);
+
+      setCadastroStatus('Salvando...');
+      google.script.run
+        .withSuccessHandler((r) => {
+          setCadastroStatus('Salvo!');
+          loadCadOperacoes(payload.categoriaId, r.id);
+          loadAnaliseOpsFull(payload.categoriaId);
+        })
+        .withFailureHandler((e) => setCadastroStatus(e?.message || String(e), true))
+        .apiUpsertOperacao(payload);
+    }
+
+    function deleteCadOperacao(){
+      const id = state.cadOpAtual?.id;
+      if (!id) return;
+      const ok = confirm(`Excluir a operação "${state.cadOpAtual.nome}"?`);
+      if (!ok) return;
+
+      setCadastroStatus('Excluindo...');
+      google.script.run
+        .withSuccessHandler(() => {
+          setCadastroStatus('Excluída.');
+          loadCadOperacoes($('cadCategoriaSelect').value);
+          loadAnaliseOpsFull($('cadCategoriaSelect').value);
+        })
+        .withFailureHandler((e) => setCadastroStatus(e?.message || String(e), true))
+        .apiDeleteOperacao({ id });
+    }
+
+    function loadAnaliseOpsFull(categoriaId){
+      if (!categoriaId) return;
+      $('analiseHint').textContent = 'Carregando operações...';
+      state.analiseSelectedIds = [];
+      $('analiseCompare').innerHTML = '';
+
+      google.script.run
+        .withSuccessHandler((ops) => {
+          state.analiseOpsFull = ops || [];
+          renderAnaliseOpsList();
+          $('analiseHint').textContent = 'Selecione uma ou duas operações para comparar.';
+        })
+        .withFailureHandler((e) => {
+          $('analiseHint').textContent = (e?.message || String(e));
+        })
+        .apiListOperacoesFull({ categoriaId });
+    }
+
+    function renderAnaliseOpsList(){
+      const wrap = $('analiseOpsList');
+      wrap.innerHTML = '';
+
+      if (!state.analiseOpsFull.length) {
+        wrap.innerHTML = `<div class="text-xs text-slate-400">Nenhuma operação cadastrada nessa categoria.</div>`;
+        return;
+      }
+
+      state.analiseOpsFull.forEach(op => {
+        const checked = state.analiseSelectedIds.includes(op.id);
+        const el = document.createElement('div');
+        el.className = 'rounded-xl bg-slate-950/40 border border-slate-700 hover:bg-slate-900/40 px-3 py-3 flex items-start gap-3';
+
+        el.innerHTML = `
+          <input type="checkbox" class="mt-1 w-4 h-4 accent-indigo-400" ${checked ? 'checked' : ''} />
+          <div class="min-w-0">
+            <div class="text-sm font-semibold text-white truncate">${escapeHtml(op.nome)}</div>
+            <div class="text-[11px] text-slate-400">Invest: ${brl(op.investimento)} · ROAS: ${pct(op.roasPercent)}</div>
+          </div>
+        `;
+
+        const cb = el.querySelector('input');
+        cb.onchange = () => toggleAnaliseSelection(op.id);
+
+        el.onclick = (ev) => {
+          if (ev.target.tagName.toLowerCase() !== 'input') {
+            cb.checked = !cb.checked;
+            cb.onchange();
+          }
+        };
+
+        wrap.appendChild(el);
+      });
+    }
+
+    function toggleAnaliseSelection(id){
+      const idx = state.analiseSelectedIds.indexOf(id);
+      if (idx >= 0) state.analiseSelectedIds.splice(idx, 1);
+      else {
+        if (state.analiseSelectedIds.length >= 2) {
+          $('analiseHint').textContent = 'Você só pode selecionar até 2 operações.';
+          setTimeout(() => $('analiseHint').textContent = 'Selecione uma ou duas operações para comparar.', 1200);
+          renderAnaliseOpsList();
+          return;
+        }
+        state.analiseSelectedIds.push(id);
+      }
+      renderAnaliseOpsList();
+      renderAnaliseCompare();
+    }
+
+    function renderAnaliseCompare(){
+      const box = $('analiseCompare');
+      box.innerHTML = '';
+
+      const selected = state.analiseOpsFull.filter(o => state.analiseSelectedIds.includes(o.id));
+      if (!selected.length) {
+        box.innerHTML = `
+          <div class="rounded-2xl border border-slate-700/60 bg-slate-950/30 p-6 text-center text-slate-400 text-sm md:col-span-2">
+            Selecione uma operação para visualizar o funil.
+          </div>
+        `;
+        return;
+      }
+
+      selected.forEach(op => {
+        const el = document.createElement('div');
+        el.className = 'rounded-2xl border border-slate-700/60 bg-slate-950/30 p-4';
+        el.innerHTML = buildFunnelHorizontalHtml(op);
+        box.appendChild(el);
+      });
+
+      if (selected.length === 1) {
+        box.firstChild.classList.add('md:col-span-2');
+      }
+    }
+
+    /* ===== FUNIL HORIZONTAL (estilo referência) ===== */
+    function buildFunnelHorizontalHtml(op){
+      const c = calcFromInputs(
+        op.investimento, op.cpa, op.roasPercent,
+        op.aproveitamentoLeadsPercent, op.aproveitamentoCicloInicialPercent,
+        op.rpsCicloInicialUsd
+      );
+
+      const percentBar = clamp(c.percentFinal, 0, 120);
+
+      const header = `
+        <div class="flex items-start justify-between gap-3">
+          <div>
+            <div class="text-sm font-extrabold text-white">${escapeHtml(op.nome)}</div>
+            <div class="text-[11px] text-slate-400">
+              CPA ${brl(op.cpa)} · ROAS ${pct(op.roasPercent)} · Aprov Leads ${pct(op.aproveitamentoLeadsPercent)} · Aprov ciclo ${pct(op.aproveitamentoCicloInicialPercent)} · RPS ${usd(op.rpsCicloInicialUsd)}
+            </div>
+          </div>
+          <div class="text-right">
+            <div class="text-[11px] text-slate-400">Valor final</div>
+            <div class="text-lg font-extrabold text-white">${brl(c.valorFinal)}</div>
+            <div class="text-[11px] text-slate-400">${pct(c.percentFinal)} do investimento</div>
+          </div>
+        </div>
+      `;
+
+      const bar = `
+        <div class="mt-4 rounded-2xl border border-slate-700/60 bg-slate-950/40 p-3">
+          <div class="h-2 bg-slate-800 rounded-full overflow-hidden">
+            <div class="h-2 bg-gradient-to-r from-indigo-500 to-teal-400 rounded-full" style="width:${percentBar}%"></div>
+          </div>
+          <div class="mt-2 flex justify-between text-[11px] text-slate-400">
+            <span>Investimento: <b class="text-white">${brl(op.investimento)}</b></span>
+            <span>USD/BRL: <b class="text-white">${USD_BRL_RATE.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2})}</b></span>
+          </div>
+        </div>
+      `;
+
+      const node1 = nodeHtml('Etapa 1: Base', 'Investimento', brl(op.investimento), [
+        ['CPA', brl(op.cpa)],
+        ['Leads', intBR(c.leads)]
+      ]);
+
+      const mid1 = midHtml('Aplicando', 'Aproveitamento Leads', pct(op.aproveitamentoLeadsPercent), [
+        ['Chegada de Leads', intBR(c.chegada)]
+      ]);
+
+      const node2 = nodeHtml('Etapa 2: Recuperado', 'Valor recuperado', brl(c.valorRec), [
+        ['ROAS', pct(op.roasPercent)]
+      ]);
+
+      const mid2 = midHtml('Aplicando', 'Aprov. ciclo inicial', pct(op.aproveitamentoCicloInicialPercent), [
+        ['Sessões', intBR(c.sessoes)]
+      ]);
+
+      const node3 = nodeHtml('Etapa 3: Ciclo Inicial', 'Receita ciclo inicial', brl(c.receitaCiclo), [
+        ['RPS', usd(op.rpsCicloInicialUsd)],
+        ['USD/BRL', USD_BRL_RATE.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2})]
+      ]);
+
+      const arrow = arrowHtml();
+
+      const final = finalHtml('Resultado Final', 'Recuperação final', brl(c.valorFinal), [
+        ['Recuperado (%)', pct(c.percentFinal)]
+      ]);
+
+      return `
+        ${header}
+        ${bar}
+
+        <div class="mt-4 funnel-scroll">
+          <div class="funnel-track flex items-center gap-4">
+            ${node1}
+            ${arrow}
+            ${mid1}
+            ${arrow}
+            ${node2}
+            ${arrow}
+            ${mid2}
+            ${arrow}
+            ${node3}
+            ${arrow}
+            ${final}
+          </div>
+        </div>
+      `;
+    }
+
+    function nodeHtml(topLabel, title, value, lines){
+      return `
+        <div class="funnel-node rounded-2xl p-4 funnel-card">
+          <div class="text-xs font-bold text-slate-300">${escapeHtml(topLabel)}</div>
+          <div class="mt-1 text-sm font-semibold text-white">${escapeHtml(title)}</div>
+          <div class="mt-2 text-3xl font-extrabold text-indigo-200">${escapeHtml(value)}</div>
+          <div class="mt-3 space-y-1">
+            ${lines.map(([k,v]) => `<div class="flex justify-between text-[11px] text-slate-400"><span>${escapeHtml(k)}</span><span class="text-slate-200 font-semibold">${escapeHtml(v)}</span></div>`).join('')}
+          </div>
+        </div>
+      `;
+    }
+
+    function finalHtml(topLabel, title, value, lines){
+      return `
+        <div class="funnel-node final rounded-2xl p-4 funnel-card">
+          <div class="text-xs font-bold text-indigo-200">${escapeHtml(topLabel)}</div>
+          <div class="mt-1 text-sm font-semibold text-white">${escapeHtml(title)}</div>
+          <div class="mt-2 text-3xl font-extrabold text-white">${escapeHtml(value)}</div>
+          <div class="mt-3 space-y-1">
+            ${lines.map(([k,v]) => `<div class="flex justify-between text-[11px] text-indigo-100/80"><span>${escapeHtml(k)}</span><span class="text-white font-semibold">${escapeHtml(v)}</span></div>`).join('')}
+          </div>
+        </div>
+      `;
+    }
+
+    function midHtml(prefix, title, bigValue, chips){
+      return `
+        <div class="funnel-mid">
+          <div class="text-[11px] text-slate-400">${escapeHtml(prefix)}</div>
+          <div class="text-sm font-bold text-white">${escapeHtml(title)}</div>
+          <div class="mt-1 text-2xl font-extrabold text-indigo-200">${escapeHtml(bigValue)}</div>
+          <div class="mt-3 flex flex-col items-center gap-2">
+            ${chips.map(([k,v]) => `<div class="chip"><span>${escapeHtml(k)}</span><b class="text-slate-100">${escapeHtml(v)}</b></div>`).join('')}
+          </div>
+        </div>
+      `;
+    }
+
+    function arrowHtml(){
+      return `
+        <div class="funnel-arrow" aria-hidden="true">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+            <path d="M5 12h14" stroke="#a5b4fc" stroke-width="2" stroke-linecap="round"/>
+            <path d="M13 6l6 6-6 6" stroke="#a5b4fc" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+      `;
+    }
+
+    function escapeHtml(s){
+      return String(s ?? '')
+        .replaceAll('&','&amp;')
+        .replaceAll('<','&lt;')
+        .replaceAll('>','&gt;')
+        .replaceAll('"','&quot;')
+        .replaceAll("'","&#039;");
+    }
+
+    function bind(){
+      $('usdRateLabel').textContent = USD_BRL_RATE.toLocaleString('pt-BR', {minimumFractionDigits:2, maximumFractionDigits:2});
+
+      $('tabBtnAnalise').onclick = () => switchTab('analise');
+      $('tabBtnCadastro').onclick = () => switchTab('cadastro');
+
+      $('btnCatNova').onclick = () => catFlow('new');
+      $('btnCatRenomear').onclick = () => catFlow('rename');
+      $('btnCatExcluir').onclick = () => catFlow('delete');
+
+      $('cadCategoriaSelect').onchange = (e) => {
+        const id = e.target.value;
+        $('analiseCategoriaSelect').value = id;
+        loadCadOperacoes(id);
+        loadAnaliseOpsFull(id);
+      };
+
+      $('analiseCategoriaSelect').onchange = (e) => {
+        const id = e.target.value;
+        $('cadCategoriaSelect').value = id;
+        loadCadOperacoes(id);
+        loadAnaliseOpsFull(id);
+      };
+
+      $('cadOperacaoSelect').onchange = (e) => loadCadOperacao(e.target.value);
+
+      $('btnOpNova').onclick = () => clearCadForm();
+      $('btnOpSalvar').onclick = () => saveCadOperacao();
+      $('btnOpExcluir').onclick = () => deleteCadOperacao();
+
+      $('btnLimparSelecao').onclick = () => {
+        state.analiseSelectedIds = [];
+        renderAnaliseOpsList();
+        renderAnaliseCompare();
+      };
+
+      ['op_nome','op_investimento','op_cpa','op_roas','op_aprovLeads','op_aprovCiclo','op_rps']
+        .forEach(id => $(id).addEventListener('input', () => calcCadastroKPIs()));
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      bind();
+      calcCadastroKPIs();
+      loadCategorias();
+    });
+  </script>
+</body>
+</html>
