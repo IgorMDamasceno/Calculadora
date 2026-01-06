@@ -642,6 +642,19 @@
     }
 
     /* ===== FUNIL HORIZONTAL (estilo referência) ===== */
+    function valueSizeClass(text, variant='main'){
+      const len = String(text ?? '').length;
+      if (variant === 'mid') {
+        if (len > 16) return 'text-base';
+        if (len > 12) return 'text-lg';
+        return 'text-xl';
+      }
+      // default (main/final)
+      if (len > 16) return 'text-lg';
+      if (len > 12) return 'text-xl';
+      return 'text-2xl';
+    }
+
     function buildFunnelHorizontalHtml(op){
       const c = calcFromInputs(
         op.investimento, op.cpa, op.roasPercent,
@@ -730,11 +743,12 @@
     }
 
     function nodeHtml(topLabel, title, value, lines){
+      const valueClass = valueSizeClass(value, 'main');
       return `
         <div class="funnel-node rounded-2xl p-4 funnel-card">
           <div class="text-xs font-bold text-slate-300">${escapeHtml(topLabel)}</div>
           <div class="mt-1 text-sm font-semibold text-white">${escapeHtml(title)}</div>
-          <div class="mt-2 text-xl font-extrabold text-indigo-200">${escapeHtml(value)}</div>
+          <div class="mt-2 ${valueClass} font-extrabold text-indigo-200">${escapeHtml(value)}</div>
           <div class="mt-3 space-y-1">
             ${lines.map(([k,v]) => `<div class="flex justify-between text-[11px] text-slate-400"><span>${escapeHtml(k)}</span><span class="text-slate-200 font-semibold">${escapeHtml(v)}</span></div>`).join('')}
           </div>
@@ -743,11 +757,12 @@
     }
 
     function finalHtml(topLabel, title, value, lines){
+      const valueClass = valueSizeClass(value, 'main');
       return `
         <div class="funnel-node final rounded-2xl p-4 funnel-card">
           <div class="text-xs font-bold text-indigo-200">${escapeHtml(topLabel)}</div>
           <div class="mt-1 text-sm font-semibold text-white">${escapeHtml(title)}</div>
-          <div class="mt-2 text-2xl font-extrabold text-white">${escapeHtml(value)}</div>
+          <div class="mt-2 ${valueClass} font-extrabold text-white">${escapeHtml(value)}</div>
           <div class="mt-3 space-y-1">
             ${lines.map(([k,v]) => `<div class="flex justify-between text-[11px] text-indigo-100/80"><span>${escapeHtml(k)}</span><span class="text-white font-semibold">${escapeHtml(v)}</span></div>`).join('')}
           </div>
@@ -756,11 +771,12 @@
     }
 
     function midHtml(prefix, title, bigValue, chips){
+      const valueClass = valueSizeClass(bigValue, 'mid');
       return `
         <div class="funnel-mid">
           <div class="text-[11px] text-slate-400">${escapeHtml(prefix)}</div>
           <div class="text-sm font-bold text-white">${escapeHtml(title)}</div>
-          <div class="mt-1 text-lg font-extrabold text-indigo-200">${escapeHtml(bigValue)}</div>
+          <div class="mt-1 ${valueClass} font-extrabold text-indigo-200">${escapeHtml(bigValue)}</div>
           <div class="mt-3 flex flex-col items-center gap-2">
             ${chips.map(([k,v]) => `<div class="chip"><span>${escapeHtml(k)}</span><b class="text-slate-100">${escapeHtml(v)}</b></div>`).join('')}
           </div>
