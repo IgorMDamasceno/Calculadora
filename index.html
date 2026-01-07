@@ -61,6 +61,9 @@
       align-items: center;
       gap: 8px;
     }
+    .funnel-group__body .funnel-node {
+      min-width: 0;
+    }
     .funnel-node {
       flex: 1 1 160px;
       min-width: 150px;
@@ -792,7 +795,7 @@
           <div class="mt-1 text-sm font-semibold text-white">${escapeHtml(title)}</div>
           <div class="mt-2 ${valueClass} leading-tight font-extrabold text-indigo-200 overflow-hidden text-ellipsis whitespace-nowrap">${escapeHtml(value)}</div>
           <div class="mt-3 space-y-1">
-            ${lines.map(([k,v]) => `<div class="flex items-center gap-2 text-[11px] text-slate-400 min-w-0"><span class="min-w-0">${escapeHtml(k)}</span><span class="ml-auto text-slate-200 font-semibold text-right whitespace-nowrap overflow-hidden text-ellipsis max-w-[120px]">${escapeHtml(v)}</span></div>`).join('')}
+            ${lines.map(([k,v]) => `<div class="flex items-center gap-2 text-[11px] text-slate-400 min-w-0"><span class="min-w-0">${escapeHtml(k)}</span><span class="ml-auto text-slate-200 font-semibold text-right whitespace-nowrap overflow-hidden text-ellipsis max-w-full">${escapeHtml(v)}</span></div>`).join('')}
           </div>
         </div>
       `;
@@ -806,7 +809,7 @@
           ${title ? `<div class="mt-1 text-sm font-semibold text-white">${escapeHtml(title)}</div>` : ''}
           <div class="mt-2 ${valueClass} leading-tight font-extrabold text-white">${escapeHtml(value)}</div>
           <div class="mt-3 space-y-1">
-            ${lines.map(([k,v]) => `<div class="flex items-center gap-2 text-[11px] text-indigo-100/80 min-w-0"><span class="min-w-0">${escapeHtml(k)}</span><span class="ml-auto text-white font-semibold text-right whitespace-nowrap overflow-hidden text-ellipsis max-w-[120px]">${escapeHtml(v)}</span></div>`).join('')}
+            ${lines.map(([k,v]) => `<div class="flex items-center gap-2 text-[11px] text-indigo-100/80 min-w-0"><span class="min-w-0">${escapeHtml(k)}</span><span class="ml-auto text-white font-semibold text-right whitespace-nowrap overflow-hidden text-ellipsis max-w-full">${escapeHtml(v)}</span></div>`).join('')}
           </div>
         </div>
       `;
