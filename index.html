@@ -26,12 +26,11 @@
       flex-wrap: nowrap;
       gap: 10px;
       min-width: 100%;
-      align-items: center;
+      align-items: stretch;
     }
     .funnel-group {
       flex: 1 1 320px;
       min-width: 280px;
-      min-height: 220px;
       background: rgba(2,6,23,.28);
       border: 1px solid rgba(148,163,184,.22);
       border-radius: 18px;
@@ -75,7 +74,6 @@
       box-shadow: none;
     }
     .funnel-node.final {
-      min-height: 220px;
       background: linear-gradient(135deg, rgba(99,102,241,.18), rgba(2,6,23,.35));
       border: 2px solid rgba(99,102,241,.55);
       box-shadow: 0 10px 40px rgba(99,102,241,.12);
@@ -90,6 +88,7 @@
       align-items: center;
       justify-content: center;
       flex-shrink: 0;
+      align-self: center;
     }
     .funnel-arrow.compact {
       width: 30px;
@@ -793,7 +792,7 @@
           <div class="mt-1 text-sm font-semibold text-white">${escapeHtml(title)}</div>
           <div class="mt-2 ${valueClass} leading-tight font-extrabold text-indigo-200 overflow-hidden text-ellipsis whitespace-nowrap">${escapeHtml(value)}</div>
           <div class="mt-3 space-y-1">
-            ${lines.map(([k,v]) => `<div class="flex justify-between text-[11px] text-slate-400"><span>${escapeHtml(k)}</span><span class="text-slate-200 font-semibold">${escapeHtml(v)}</span></div>`).join('')}
+            ${lines.map(([k,v]) => `<div class="flex items-center gap-2 text-[11px] text-slate-400 min-w-0"><span class="min-w-0">${escapeHtml(k)}</span><span class="ml-auto text-slate-200 font-semibold text-right whitespace-nowrap overflow-hidden text-ellipsis max-w-[120px]">${escapeHtml(v)}</span></div>`).join('')}
           </div>
         </div>
       `;
@@ -807,7 +806,7 @@
           ${title ? `<div class="mt-1 text-sm font-semibold text-white">${escapeHtml(title)}</div>` : ''}
           <div class="mt-2 ${valueClass} leading-tight font-extrabold text-white">${escapeHtml(value)}</div>
           <div class="mt-3 space-y-1">
-            ${lines.map(([k,v]) => `<div class="flex justify-between text-[11px] text-indigo-100/80"><span>${escapeHtml(k)}</span><span class="text-white font-semibold">${escapeHtml(v)}</span></div>`).join('')}
+            ${lines.map(([k,v]) => `<div class="flex items-center gap-2 text-[11px] text-indigo-100/80 min-w-0"><span class="min-w-0">${escapeHtml(k)}</span><span class="ml-auto text-white font-semibold text-right whitespace-nowrap overflow-hidden text-ellipsis max-w-[120px]">${escapeHtml(v)}</span></div>`).join('')}
           </div>
         </div>
       `;
