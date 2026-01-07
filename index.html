@@ -28,6 +28,29 @@
       min-width: 100%;
       align-items: center;
     }
+    .funnel-group {
+      flex: 1 1 320px;
+      min-width: 280px;
+      background: rgba(2,6,23,.28);
+      border: 1px solid rgba(148,163,184,.22);
+      border-radius: 18px;
+      padding: 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .funnel-group__header {
+      font-size: 11px;
+      font-weight: 700;
+      color: rgba(226,232,240,.8);
+      letter-spacing: 0.01em;
+      text-transform: uppercase;
+    }
+    .funnel-group__body {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
     .funnel-node {
       flex: 1 1 160px;
       min-width: 150px;
@@ -49,6 +72,11 @@
       align-items: center;
       justify-content: center;
       flex-shrink: 0;
+    }
+    .funnel-arrow.compact {
+      width: 30px;
+      height: 30px;
+      border-radius: 10px;
     }
     .funnel-mid {
       flex: 1 1 120px;
@@ -699,12 +727,14 @@
         ['Leads', intBR(c.leads)]
       ]);
 
-      const mid1 = midHtml('Aplicando', 'Aproveitamento Leads', pct(op.aproveitamentoLeadsPercent), [
-        ['Chegada de Leads', intBR(c.chegada)]
-      ]);
-
       const node2 = nodeHtml('Etapa 2: Recuperado', 'Valor recuperado', brl(c.valorRec), [
         ['ROAS', pct(op.roasPercent)]
+      ]);
+
+      const aquisicao = groupHtml('Aquisição', node1, node2);
+
+      const mid1 = midHtml('Aplicando', 'Aproveitamento Leads', pct(op.aproveitamentoLeadsPercent), [
+        ['Chegada de Leads', intBR(c.chegada)]
       ]);
 
       const mid2 = midHtml('Aplicando', 'Aprov. ciclo inicial', pct(op.aproveitamentoCicloInicialPercent), [
@@ -716,9 +746,11 @@
         ['USD/BRL', USD_BRL_RATE.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2})]
       ]);
 
+      const retencao = groupHtml('Retenção', mid2, node3);
+
       const arrow = arrowHtml();
 
-      const final = finalHtml('Resultado Final', 'Recuperação final', brl(c.valorFinal), [
+      const final = finalHtml('Ganho por investimento', 'Valor final', brl(c.valorFinal), [
         ['Recuperado (%)', pct(c.percentFinal)]
       ]);
 
@@ -728,15 +760,11 @@
 
         <div class="mt-4 funnel-scroll">
           <div class="funnel-track flex gap-4">
-            ${node1}
+            ${aquisicao}
             ${arrow}
             ${mid1}
             ${arrow}
-            ${node2}
-            ${arrow}
-            ${mid2}
-            ${arrow}
-            ${node3}
+            ${retencao}
             ${arrow}
             ${final}
           </div>
@@ -772,6 +800,19 @@
       `;
     }
 
+    function groupHtml(label, leftHtml, rightHtml){
+      return `
+        <div class="funnel-group">
+          <div class="funnel-group__header">${escapeHtml(label)}</div>
+          <div class="funnel-group__body">
+            ${leftHtml}
+            ${arrowHtml(true)}
+            ${rightHtml}
+          </div>
+        </div>
+      `;
+    }
+
     function midHtml(prefix, title, bigValue, chips){
       const valueClass = valueSizeClass(bigValue, 'mid');
       return `
@@ -786,9 +827,10 @@
       `;
     }
 
-    function arrowHtml(){
+    function arrowHtml(compact=false){
+      const cls = compact ? 'funnel-arrow compact' : 'funnel-arrow';
       return `
-        <div class="funnel-arrow" aria-hidden="true">
+        <div class="${cls}" aria-hidden="true">
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
             <path d="M5 12h14" stroke="#a5b4fc" stroke-width="2" stroke-linecap="round"/>
             <path d="M13 6l6 6-6 6" stroke="#a5b4fc" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
